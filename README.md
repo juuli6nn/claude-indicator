@@ -2,12 +2,16 @@
 
 A beautiful always-on-top status pill for **Claude Code** that shows you what Claude is doing — even when you've alt-tabbed away.
 
-![Claude Indicator Demo](runtime/twinkle_frames.png)
+<p align="center">
+  <img src="assets/state_ready.png" width="30%" alt="Ready state" />
+  <img src="assets/state_working.png" width="30%" alt="Working state" />
+  <img src="assets/state_needs_you.png" width="30%" alt="Needs you state" />
+</p>
 
 ## What it does
 
-- **Working** — terracotta spark twinkles with whimsical labels ("Ruminating…", "Pondering…", "Caramelizing…") and a live elapsed timer
 - **Ready** — green spark, idle and waiting for your next prompt
+- **Working** — terracotta spark twinkles with whimsical labels ("Ruminating…", "Pondering…", "Caramelizing…") and a live elapsed timer
 - **Needs you** — amber spark, permission prompt or input needed (+ attention pulse + system chime)
 
 The pill **auto-hides when you're in your IDE/terminal** (you can already see Claude there) and **fades back in when you alt-tab away**. Perfect for when you're browsing, in Discord, watching a video — you never lose track of Claude's status.
