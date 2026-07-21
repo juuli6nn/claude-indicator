@@ -228,6 +228,7 @@ class Pill(QWidget):
         self._drag_offset = None
         self._dragging = False
         self._hidden_by_focus = False
+        self._focus_streak = 0        # consecutive ticks agreeing on hide/show
         self._last_pid_check = 0.0
         self._word_index = 0
         self._word_rotated = 0.0
@@ -238,6 +239,10 @@ class Pill(QWidget):
 
         self.fade_anim = QPropertyAnimation(self, b"windowOpacity", self)
         self.fade_anim.setDuration(220)
+        # Fully hide the window once faded out: an invisible-but-mapped
+        # always-on-top layered window still forces DWM composition on every
+        # repaint, which dims/pulses fullscreen apps underneath.
+        self.fade_anim.finished.connect(self._after_fade)
 
         self.sweep_anim = QPropertyAnimation(self, b"sweep", self)
         self.sweep_anim.setDuration(420)
@@ -431,6 +436,10 @@ class Pill(QWidget):
     def _tick(self) -> None:
         self._read_status()
         self._update_visibility()
+        # Never animate while hidden: repainting an always-on-top layered
+        # window at 10Hz keeps DWM busy and visibly dims fullscreen apps.
+        if not self.isVisible():
+            return
         now = time.time()
         if self.status == "working":
             self._spin = (self._spin + 1.2) % 360  # ~12 deg/s spin at 10Hz
@@ -591,22 +600,41 @@ class Pill(QWidget):
         if self.status == "ended":
             return
         proc = foreground_process_name().lower()
+        if not proc:
+            return  # transient unknown (window switch in progress): keep state
         hide_list = [p.lower() for p in self.config["hide_on_processes"]]
         should_hide = proc in hide_list and self.status != "waiting"
-        if should_hide and not self._hidden_by_focus:
-            self._hidden_by_focus = True
+        if should_hide == self._hidden_by_focus:
+            self._focus_streak = 0
+            return
+        # Debounce: require the decision to hold for a few consecutive ticks.
+        # Focus flaps (explorer flashing between windows) otherwise fade the
+        # topmost pill in/out constantly, which forces DWM out of fullscreen
+        # optimization and visibly dims whatever the user is watching.
+        self._focus_streak += 1
+        if self._focus_streak < 3:
+            return
+        self._focus_streak = 0
+        self._hidden_by_focus = should_hide
+        if should_hide:
             log(f"hide (focus: {proc})")
             self._fade_to(0.0)
-        elif not should_hide and self._hidden_by_focus:
-            self._hidden_by_focus = False
+        else:
             log(f"show (focus: {proc})")
             self._fade_to(1.0)
 
     def _fade_to(self, opacity: float) -> None:
+        if opacity > 0 and not self.isVisible():
+            self.setWindowOpacity(0.0)
+            self.show()
         self.fade_anim.stop()
         self.fade_anim.setStartValue(self.windowOpacity())
         self.fade_anim.setEndValue(opacity)
         self.fade_anim.start()
+
+    def _after_fade(self) -> None:
+        if self.windowOpacity() <= 0.01 and self.isVisible():
+            self.hide()
 
 
 def acquire_singleton() -> bool:
