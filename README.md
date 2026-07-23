@@ -1,6 +1,6 @@
 # Claude Indicator
 
-An always-on-top status pill for **Claude Code** on Windows. It shows what Claude is doing right now — even when you've alt-tabbed away to a browser, Discord, or a video.
+An always-on-top status pill for **Claude Code** on Windows. It shows what Claude is doing right now — even when you've alt-tabbed away to a browser, Discord, or a Youtube video.
 
 <p align="center">
   <img src="assets/state_ready.png" width="30%" alt="Ready state" />
